@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
   navMenuBtn.addEventListener('click', () => {
     navMenuBtn.classList.toggle('active');
     navLinks.classList.toggle('open');
+    navMenuBtn.setAttribute('aria-expanded', navLinks.classList.contains('open'));
   });
 
   // Close menu on link click
@@ -65,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     link.addEventListener('click', () => {
       navMenuBtn.classList.remove('active');
       navLinks.classList.remove('open');
+      navMenuBtn.setAttribute('aria-expanded', 'false');
     });
   });
 
@@ -253,8 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  projectCards.forEach(card => {
-    card.addEventListener('click', () => {
+  function openProjectModal(card) {
       const projectId = card.getAttribute('data-project');
       const data = projectData[projectId];
       const img = card.querySelector('img');
@@ -269,12 +270,24 @@ document.addEventListener('DOMContentLoaded', () => {
       modalArea.textContent = data.area;
 
       projectModal.classList.add('active');
+      projectModal.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
+      modalClose.focus();
+  }
+
+  projectCards.forEach(card => {
+    card.addEventListener('click', () => openProjectModal(card));
+    card.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openProjectModal(card);
+      }
     });
   });
 
   function closeModal() {
     projectModal.classList.remove('active');
+    projectModal.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
   }
 
@@ -332,6 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Contact Form ──
   const contactForm = document.getElementById('contactForm');
+  const formStatus = document.getElementById('formStatus');
 
   contactForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -344,21 +358,25 @@ document.addEventListener('DOMContentLoaded', () => {
       Message Sent!
     `;
     submitBtn.style.background = 'linear-gradient(135deg, #2d7d9a, #1a3a5c)';
+    formStatus.textContent = 'Demo form only: connect it to an email service before publishing so messages can be delivered.';
 
     setTimeout(() => {
       submitBtn.innerHTML = originalText;
       submitBtn.style.background = '';
       contactForm.reset();
+      formStatus.textContent = '';
     }, 3000);
   });
 
   // ── Cursor Glow Effect ──
   const cursorGlow = document.getElementById('cursorGlow');
 
-  document.addEventListener('mousemove', (e) => {
-    cursorGlow.style.left = e.clientX + 'px';
-    cursorGlow.style.top = e.clientY + 'px';
-  });
+  if (window.matchMedia('(pointer: fine)').matches) {
+    document.addEventListener('mousemove', (e) => {
+      cursorGlow.style.left = e.clientX + 'px';
+      cursorGlow.style.top = e.clientY + 'px';
+    });
+  }
 
   // ── Smooth Scroll for anchor links ──
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {

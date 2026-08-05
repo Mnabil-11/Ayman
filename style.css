@@ -2095,3 +2095,36 @@ body:hover .cursor-glow {
 .hidden {
   display: none !important;
 }
+
+/* ── Accessibility ── */
+.project-card:focus-visible,
+.filter-btn:focus-visible,
+.nav-menu-btn:focus-visible,
+.modal-close:focus-visible,
+.back-to-top:focus-visible,
+.btn-submit:focus-visible {
+  outline: 3px solid var(--secondary);
+  outline-offset: 4px;
+}
+
+.form-status {
+  min-height: 1.5em;
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .cursor-glow {
+    display: none;
+  }
+}
