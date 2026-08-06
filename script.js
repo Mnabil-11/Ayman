@@ -206,12 +206,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const projectData = {
     1: {
-      title: 'Residential Tower Design',
-      category: 'Residential',
-      description: 'Academic graduation project: Complete structural design and analysis of a 10-story residential tower using ETABS and SAP2000. Included seismic analysis, foundation design, and detailed reinforcement drawings in AutoCAD.',
-      client: 'Graduation Project',
-      duration: '6 Months',
-      area: '5,000 m²'
+      title: 'Water Distribution System Design',
+      category: 'Academic Project',
+      description: 'Collaborated with a team to design a water distribution system based on project requirements. Contributed to system planning, engineering calculations, and the preparation of project documentation.',
+      client: 'Academic Project',
+      duration: 'Team Project',
+      area: 'Water Distribution System'
     },
     2: {
       title: 'Commercial Center Analysis',
