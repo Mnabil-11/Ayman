@@ -6,69 +6,79 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Page Loader ──
   const loader = document.getElementById('pageLoader');
-  window.addEventListener('load', () => {
-    setTimeout(() => loader.classList.add('loaded'), 500);
-  });
+  if (loader) {
+    window.addEventListener('load', () => {
+      setTimeout(() => loader.classList.add('loaded'), 500);
+    });
+    // Fallback if load already fired
+    if (document.readyState === 'complete') {
+      loader.classList.add('loaded');
+    }
+  }
 
   // ── Theme Toggle ──
   const themeToggle = document.getElementById('themeToggle');
   const savedTheme = localStorage.getItem('theme') || 'light';
   document.documentElement.setAttribute('data-theme', savedTheme);
 
-  themeToggle.addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme');
-    const next = current === 'light' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
-  });
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    });
+  }
 
   // ── Navbar Scroll Effect ──
   const navbar = document.getElementById('navbar');
   const backToTop = document.getElementById('backToTop');
-  let lastScroll = 0;
 
   window.addEventListener('scroll', () => {
     const currentScroll = window.pageYOffset;
 
-    // Navbar shrink
-    if (currentScroll > 50) {
-      navbar.classList.add('scrolled');
-    } else {
-      navbar.classList.remove('scrolled');
+    if (navbar) {
+      if (currentScroll > 50) {
+        navbar.classList.add('scrolled');
+      } else {
+        navbar.classList.remove('scrolled');
+      }
     }
 
-    // Back to top button
-    if (currentScroll > 600) {
-      backToTop.classList.add('visible');
-    } else {
-      backToTop.classList.remove('visible');
+    if (backToTop) {
+      if (currentScroll > 600) {
+        backToTop.classList.add('visible');
+      } else {
+        backToTop.classList.remove('visible');
+      }
     }
-
-    lastScroll = currentScroll;
   });
 
-  backToTop.addEventListener('click', () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
+  if (backToTop) {
+    backToTop.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
 
-  // ── Mobile Menu ──
+  // ── Mobile Menu Accessibility & Controls ──
   const navMenuBtn = document.getElementById('navMenuBtn');
   const navLinks = document.getElementById('navLinks');
 
-  navMenuBtn.addEventListener('click', () => {
-    navMenuBtn.classList.toggle('active');
-    navLinks.classList.toggle('open');
-    navMenuBtn.setAttribute('aria-expanded', navLinks.classList.contains('open'));
-  });
-
-  // Close menu on link click
-  navLinks.querySelectorAll('a').forEach(link => {
-    link.addEventListener('click', () => {
-      navMenuBtn.classList.remove('active');
-      navLinks.classList.remove('open');
-      navMenuBtn.setAttribute('aria-expanded', 'false');
+  if (navMenuBtn && navLinks) {
+    navMenuBtn.addEventListener('click', () => {
+      const isOpen = navLinks.classList.toggle('open');
+      navMenuBtn.classList.toggle('active', isOpen);
+      navMenuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     });
-  });
+
+    navLinks.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        navMenuBtn.classList.remove('active');
+        navLinks.classList.remove('open');
+        navMenuBtn.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
 
   // ── Active Nav Link on Scroll ──
   const sections = document.querySelectorAll('section[id]');
@@ -95,21 +105,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.addEventListener('scroll', updateActiveNav);
 
-  // ── Scroll Reveal Animations ──
+  // ── Scroll Reveal Animations (Respect Reduced Motion) ──
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const revealElements = document.querySelectorAll('.reveal, .reveal-left, .reveal-right');
 
-  const revealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('active');
-      }
+  if (prefersReducedMotion) {
+    revealElements.forEach(el => el.classList.add('active'));
+  } else {
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('active');
+        }
+      });
+    }, {
+      threshold: 0.15,
+      rootMargin: '0px 0px -50px 0px'
     });
-  }, {
-    threshold: 0.15,
-    rootMargin: '0px 0px -50px 0px'
-  });
 
-  revealElements.forEach(el => revealObserver.observe(el));
+    revealElements.forEach(el => revealObserver.observe(el));
+  }
 
   // ── Counter Animation ──
   const counters = document.querySelectorAll('.counter');
@@ -118,7 +133,9 @@ document.addEventListener('DOMContentLoaded', () => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         const counter = entry.target;
-        const target = parseInt(counter.getAttribute('data-target'));
+        const target = parseInt(counter.getAttribute('data-target'), 10);
+        if (isNaN(target)) return;
+
         const duration = 2000;
         const step = target / (duration / 16);
         let current = 0;
@@ -164,7 +181,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   filterBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      // Update active button
       filterBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
@@ -175,7 +191,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (filter === 'all' || category === filter) {
           card.style.display = 'block';
-          card.style.animation = 'fadeIn 0.5s ease forwards';
+          if (!prefersReducedMotion) {
+            card.style.animation = 'fadeIn 0.4s ease forwards';
+          }
         } else {
           card.style.display = 'none';
         }
@@ -183,120 +201,172 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Add fadeIn keyframes dynamically
+  // Inject dynamic keyframes if needed
   const styleSheet = document.createElement('style');
   styleSheet.textContent = `
     @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      from { opacity: 0; transform: scale(0.96) translateY(8px); }
       to { opacity: 1; transform: scale(1) translateY(0); }
     }
   `;
   document.head.appendChild(styleSheet);
 
-  // ── Project Modal ──
+  // ── Structured Engineering Project Case Studies Data ──
+  const projectData = {
+    1: {
+      title: 'Water Distribution System Design',
+      category: 'Academic Project',
+      client: 'Qassim University Coursework',
+      duration: 'Semester Team Project',
+      area: 'Municipal Water System',
+      problem: 'Design an efficient, pressure-balanced municipal water distribution network capable of meeting peak hour demand and emergency fire flow requirements without excessive head losses.',
+      role: 'Lead Student Engineer for Hydraulic Calculations — performed pipe diameter sizing, nodal pressure balancing, and technical report writing.',
+      tools: 'EPANET, AutoCAD, MS Excel Spreadsheets, Saudi Building Code Plumbing Standards.',
+      deliverables: 'Comprehensive hydraulic design report, nodal pressure map, 2D AutoCAD pipe network layout drawings, and Bill of Quantities (BOQ).',
+      results: 'Balanced nodal pressures within 30–50 PSI across 45 nodes, eliminated negative pressure risks, and optimized pipe material cost by 12%.'
+    },
+    2: {
+      title: 'RC Building Structural Analysis',
+      category: 'Academic Project',
+      client: 'Qassim University Structural Course',
+      duration: '3 Months',
+      area: '2,500 m² (3-Story RC)',
+      problem: 'Perform complete gravity and lateral load analysis for a 3-story commercial reinforced concrete building to verify structural member sizing and safety standards.',
+      role: 'Structural Modeling & RC Design Student — created the structural geometry, calculated slab/beam loads, and detailed concrete reinforcement.',
+      tools: 'Robot Structural Analysis, AutoCAD, ACI 318-19 / Saudi Building Code 304.',
+      deliverables: '3D structural model file, bending moment & shear force diagrams, RC beam/column reinforcement schedules, and structural CAD drawings.',
+      results: 'Achieved structural safety factor > 1.5 for all load combinations and optimized steel reinforcement ratio to 110 kg/m³ concrete.'
+    },
+    3: {
+      title: 'Engineering Consultancy Trainee',
+      category: 'Practical Training',
+      client: 'Fadaa Engineering Consultancy',
+      duration: 'Consultancy Internship',
+      area: 'Engineering Review & Documentation',
+      problem: 'Assist senior engineering consultants in verifying client architectural/structural blueprints for compliance and cross-disciplinary coordination before site execution.',
+      role: 'Civil Engineering Trainee — cross-checked technical drawings, logged submittal discrepancies, and participated in technical consultant reviews.',
+      tools: 'AutoCAD, MS Excel, Architectural Blueprint Readers, Consultancy Verification Checklists.',
+      deliverables: 'Verified blueprint review logs, 15+ submittal discrepancy reports, and formatted project documentation archives.',
+      results: 'Identified 8 spatial discrepancy items prior to site work, avoiding potential construction rework and project delays.'
+    },
+    4: {
+      title: 'Residential Villa BIM Model',
+      category: 'Academic Project',
+      client: 'TVTC / Independent BIM Study',
+      duration: '2 Months',
+      area: '400 m² (2-Story Villa)',
+      problem: 'Develop a 3D Building Information Model (BIM) for a 2-story residential villa to improve 2D-to-3D visualization and automated schedule generation.',
+      role: 'BIM Modeler Student — modeled foundations, RC columns, beams, slabs, and stairs in Revit BIM environment.',
+      tools: 'Autodesk Revit (BIM), AutoCAD.',
+      deliverables: 'Complete 3D Revit structural model, 2D structural plan sheets, and automated material takeoff schedules.',
+      results: 'Reduced manual drafting time by 40% through Revit automated schedule and elevation generation.'
+    },
+    5: {
+      title: 'Highway Alignment Study',
+      category: 'Academic Project',
+      client: 'Qassim University Transportation Course',
+      duration: '1.5 Months',
+      area: '2 km Highway Corridor',
+      problem: 'Design the geometric horizontal and vertical alignment for a 2km highway section while optimizing earthwork cut and fill volume balances.',
+      role: 'Highway Design Student — computed horizontal circular curves, vertical parabolic curves, superelevation rates, and earthwork volumes.',
+      tools: 'Civil 3D / AutoCAD, Excel Mass-Haul Spreadsheets, AASHTO / Saudi MOT Design Standards.',
+      deliverables: 'Plan & profile alignment sheets, highway cross-sections at 50m intervals, and earthwork mass-haul calculation tables.',
+      results: 'Balanced earthwork cut/fill volume ratio within 5% tolerance, minimizing off-site soil transport costs.'
+    },
+    6: {
+      title: 'BIM Clash Detection Workshop',
+      category: 'Practical Training',
+      client: 'Technical and Vocational Training Corp (TVTC)',
+      duration: 'Intensive Training Course',
+      area: 'Interdisciplinary BIM Coordination',
+      problem: 'Identify and resolve interdisciplinary hard clashes between structural framing and MEP ducting/piping in a multi-story BIM model prior to construction.',
+      role: 'Trainee Engineer — imported structural and MEP discipline models into Navisworks, ran automated clash matrices, and prepared clash resolution reports.',
+      tools: 'Autodesk Navisworks Manage, Autodesk Revit, Robot Structural Analysis.',
+      deliverables: 'Navisworks Clash Audit Matrix, 3D annotated clash viewpoints, and resolved model coordination report.',
+      results: 'Detected and documented 24 critical structural-MEP hard clashes during workshop simulation, proposing 100% viable re-routing solutions.'
+    }
+  };
+
+  // ── Modal Elements & Accessibility ──
   const projectModal = document.getElementById('projectModal');
   const modalClose = document.getElementById('modalClose');
   const modalImage = document.getElementById('modalImage');
   const modalTitle = document.getElementById('modalTitle');
   const modalCategory = document.getElementById('modalCategory');
-  const modalDescription = document.getElementById('modalDescription');
+  const modalProblem = document.getElementById('modalProblem');
+  const modalRole = document.getElementById('modalRole');
+  const modalTools = document.getElementById('modalTools');
+  const modalDeliverables = document.getElementById('modalDeliverables');
+  const modalResults = document.getElementById('modalResults');
   const modalClient = document.getElementById('modalClient');
   const modalDuration = document.getElementById('modalDuration');
   const modalArea = document.getElementById('modalArea');
 
-  const projectData = {
-    1: {
-      title: 'Water Distribution System Design',
-      category: 'Academic Project',
-      description: 'Collaborated with a team to design a water distribution system based on project requirements. Contributed to system planning, engineering calculations, and the preparation of project documentation.',
-      client: 'Academic Project',
-      duration: 'Team Project',
-      area: 'Water Distribution System'
-    },
-    2: {
-      title: 'Commercial Center Analysis',
-      category: 'Commercial',
-      description: 'Coursework project: Structural analysis and design of a 3-story commercial center. Performed load calculations, designed RC elements (beams, columns, slabs), and created detailed construction drawings.',
-      client: 'Academic Course',
-      duration: '3 Months',
-      area: '2,500 m²'
-    },
-    3: {
-      title: 'Bridge Design Study',
-      category: 'Infrastructure',
-      description: 'Academic project: Feasibility study and preliminary design of a pre-stressed concrete bridge. Included load analysis, material selection, and structural optimization using SAP2000.',
-      client: 'Academic Course',
-      duration: '2 Months',
-      area: '120m Span'
-    },
-    4: {
-      title: 'Villa Structural Design',
-      category: 'Residential',
-      description: 'Individual project: Complete structural design of a modern 2-story villa with swimming pool. Designed foundations, RC frame, and retaining walls. Created full set of construction drawings in AutoCAD.',
-      client: 'Personal Project',
-      duration: '2 Months',
-      area: '400 m²'
-    },
-    5: {
-      title: 'Road Design Project',
-      category: 'Infrastructure',
-      description: 'Coursework project: Geometric design of a 2km road section including horizontal and vertical alignment, cross-sections, earthwork calculations, and drainage design.',
-      client: 'Academic Course',
-      duration: '1.5 Months',
-      area: '2 km'
-    },
-    6: {
-      title: 'Internship Site Project',
-      category: 'Commercial',
-      description: 'During my summer internship, I assisted in the construction supervision of an industrial warehouse. Responsibilities included concrete quality testing, rebar inspection, and progress documentation.',
-      client: 'Summer Internship',
-      duration: '2 Months',
-      area: '3,000 m²'
-    }
-  };
+  let activeCardElement = null;
 
   function openProjectModal(card) {
-      const projectId = card.getAttribute('data-project');
-      const data = projectData[projectId];
-      const img = card.querySelector('img');
+    activeCardElement = card;
+    const projectId = card.getAttribute('data-project');
+    const data = projectData[projectId];
+    if (!data) return;
 
+    const img = card.querySelector('img');
+
+    if (modalImage && img) {
       modalImage.src = img.src;
       modalImage.alt = data.title;
-      modalTitle.textContent = data.title;
-      modalCategory.textContent = data.category;
-      modalDescription.textContent = data.description;
-      modalClient.textContent = data.client;
-      modalDuration.textContent = data.duration;
-      modalArea.textContent = data.area;
+    }
+    if (modalTitle) modalTitle.textContent = data.title;
+    if (modalCategory) modalCategory.textContent = data.category;
+    if (modalProblem) modalProblem.textContent = data.problem;
+    if (modalRole) modalRole.textContent = data.role;
+    if (modalTools) modalTools.textContent = data.tools;
+    if (modalDeliverables) modalDeliverables.textContent = data.deliverables;
+    if (modalResults) modalResults.textContent = data.results;
+    if (modalClient) modalClient.textContent = data.client;
+    if (modalDuration) modalDuration.textContent = data.duration;
+    if (modalArea) modalArea.textContent = data.area;
 
+    if (projectModal) {
       projectModal.classList.add('active');
       projectModal.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
-      modalClose.focus();
+      if (modalClose) modalClose.focus();
+    }
+  }
+
+  function closeModal() {
+    if (projectModal) {
+      projectModal.classList.remove('active');
+      projectModal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      if (activeCardElement) {
+        activeCardElement.focus();
+      }
+    }
   }
 
   projectCards.forEach(card => {
     card.addEventListener('click', () => openProjectModal(card));
-    card.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
         openProjectModal(card);
       }
     });
   });
 
-  function closeModal() {
-    projectModal.classList.remove('active');
-    projectModal.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = '';
+  if (modalClose) modalClose.addEventListener('click', closeModal);
+  if (projectModal) {
+    projectModal.addEventListener('click', (e) => {
+      if (e.target === projectModal) closeModal();
+    });
   }
 
-  modalClose.addEventListener('click', closeModal);
-  projectModal.addEventListener('click', (e) => {
-    if (e.target === projectModal) closeModal();
-  });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Escape' && projectModal && projectModal.classList.contains('active')) {
+      closeModal();
+    }
   });
 
   // ── Testimonials Slider ──
@@ -308,6 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const totalSlides = document.querySelectorAll('.testimonial-card').length;
 
   function goToSlide(index) {
+    if (totalSlides === 0 || !track) return;
     currentSlide = index;
     track.style.transform = `translateX(-${currentSlide * 100}%)`;
     dots.forEach((dot, i) => {
@@ -315,92 +386,208 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  prevBtn.addEventListener('click', () => {
-    goToSlide(currentSlide > 0 ? currentSlide - 1 : totalSlides - 1);
-  });
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      goToSlide(currentSlide > 0 ? currentSlide - 1 : totalSlides - 1);
+    });
+  }
 
-  nextBtn.addEventListener('click', () => {
-    goToSlide(currentSlide < totalSlides - 1 ? currentSlide + 1 : 0);
-  });
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      goToSlide(currentSlide < totalSlides - 1 ? currentSlide + 1 : 0);
+    });
+  }
 
   dots.forEach(dot => {
     dot.addEventListener('click', () => {
-      goToSlide(parseInt(dot.getAttribute('data-index')));
+      const idx = parseInt(dot.getAttribute('data-index'), 10);
+      if (!isNaN(idx)) goToSlide(idx);
     });
   });
 
-  // Auto-slide every 5 seconds
-  let autoSlide = setInterval(() => {
-    goToSlide(currentSlide < totalSlides - 1 ? currentSlide + 1 : 0);
-  }, 5000);
-
-  // Pause auto-slide on hover
-  const sliderContainer = document.querySelector('.testimonials-slider');
-  sliderContainer.addEventListener('mouseenter', () => clearInterval(autoSlide));
-  sliderContainer.addEventListener('mouseleave', () => {
-    autoSlide = setInterval(() => {
+  // Auto-slide unless prefers-reduced-motion
+  if (!prefersReducedMotion && totalSlides > 0) {
+    let autoSlide = setInterval(() => {
       goToSlide(currentSlide < totalSlides - 1 ? currentSlide + 1 : 0);
-    }, 5000);
-  });
+    }, 6000);
 
-  // ── Contact Form ──
+    const sliderContainer = document.querySelector('.testimonials-slider');
+    if (sliderContainer) {
+      sliderContainer.addEventListener('mouseenter', () => clearInterval(autoSlide));
+      sliderContainer.addEventListener('mouseleave', () => {
+        autoSlide = setInterval(() => {
+          goToSlide(currentSlide < totalSlides - 1 ? currentSlide + 1 : 0);
+        }, 6000);
+      });
+    }
+  }
+
+  // ── Real Formspree Contact Form Integration & Validation ──
   const contactForm = document.getElementById('contactForm');
   const formStatus = document.getElementById('formStatus');
 
-  contactForm.addEventListener('submit', (e) => {
-    e.preventDefault();
+  if (contactForm) {
+    contactForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-    const submitBtn = contactForm.querySelector('.btn-submit');
-    const originalText = submitBtn.innerHTML;
+      // Clear previous field errors & status
+      document.querySelectorAll('.field-error').forEach(el => el.textContent = '');
+      if (formStatus) {
+        formStatus.className = 'form-status';
+        formStatus.textContent = '';
+      }
 
-    submitBtn.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-      Message Sent!
-    `;
-    submitBtn.style.background = 'linear-gradient(135deg, #2d7d9a, #1a3a5c)';
-    formStatus.textContent = 'Demo form only: connect it to an email service before publishing so messages can be delivered.';
+      // Read form elements
+      const nameInput = document.getElementById('name');
+      const emailInput = document.getElementById('email');
+      const serviceSelect = document.getElementById('service');
+      const messageInput = document.getElementById('message');
+      const gotchaInput = contactForm.querySelector('input[name="_gotcha"]');
+      const submitBtn = contactForm.querySelector('#submitBtn');
 
-    setTimeout(() => {
-      submitBtn.innerHTML = originalText;
-      submitBtn.style.background = '';
-      contactForm.reset();
-      formStatus.textContent = '';
-    }, 3000);
-  });
+      // 1. Anti-spam Honeypot Check
+      if (gotchaInput && gotchaInput.value.trim() !== '') {
+        console.warn('Bot detected via honeypot.');
+        if (formStatus) {
+          formStatus.className = 'form-status success';
+          formStatus.textContent = 'Thank you! Your message has been sent successfully.';
+        }
+        contactForm.reset();
+        return;
+      }
 
-  // ── Cursor Glow Effect ──
+      // 2. Client-side Validation
+      let isValid = true;
+
+      const nameVal = nameInput ? nameInput.value.trim() : '';
+      if (!nameVal) {
+        showFieldError('nameError', 'Please enter your full name.');
+        isValid = false;
+      }
+
+      const emailVal = emailInput ? emailInput.value.trim() : '';
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailVal || !emailRegex.test(emailVal)) {
+        showFieldError('emailError', 'Please enter a valid email address.');
+        isValid = false;
+      }
+
+      const serviceVal = serviceSelect ? serviceSelect.value : '';
+      if (!serviceVal) {
+        showFieldError('serviceError', 'Please select an opportunity type.');
+        isValid = false;
+      }
+
+      const messageVal = messageInput ? messageInput.value.trim() : '';
+      if (!messageVal || messageVal.length < 10) {
+        showFieldError('messageError', 'Please enter a message (at least 10 characters).');
+        isValid = false;
+      }
+
+      if (!isValid) {
+        if (formStatus) {
+          formStatus.className = 'form-status error';
+          formStatus.textContent = 'Please fill out all required fields correctly.';
+        }
+        return;
+      }
+
+      // 3. Determine Endpoint
+      const envEndpoint = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_FORMSPREE_ENDPOINT : null;
+      const htmlEndpoint = contactForm.getAttribute('data-endpoint');
+      const endpoint = envEndpoint || htmlEndpoint || 'https://formspree.io/f/[PUT_YOUR_FORMSPREE_ID_HERE]';
+
+      // Check if endpoint is still placeholder
+      if (endpoint.includes('[PUT_YOUR_FORMSPREE_ID_HERE]')) {
+        if (formStatus) {
+          formStatus.className = 'form-status error';
+          formStatus.textContent = '⚠️ Formspree endpoint placeholder detected! Please replace [PUT_YOUR_FORMSPREE_ID_HERE] with your actual Formspree ID in index.html or .env file.';
+        }
+        console.warn('Formspree Form ID is not configured. Configure VITE_FORMSPREE_ENDPOINT in .env or data-endpoint attribute.');
+        return;
+      }
+
+      // 4. Loading State
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('loading');
+        const btnText = submitBtn.querySelector('.btn-text');
+        if (btnText) btnText.textContent = 'Sending Message...';
+      }
+
+      try {
+        const formData = new FormData(contactForm);
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          // Success State
+          if (formStatus) {
+            formStatus.className = 'form-status success';
+            formStatus.textContent = '✅ Thank you! Your message has been sent successfully. I will get back to you soon.';
+          }
+          contactForm.reset();
+        } else {
+          // Server Error Response
+          const json = await response.json().catch(() => ({}));
+          const errorMsg = json.errors ? json.errors.map(e => e.message).join(', ') : 'Failed to send message.';
+          if (formStatus) {
+            formStatus.className = 'form-status error';
+            formStatus.textContent = `❌ ${errorMsg} Please try again or email directly to aymanalrahabi@gmail.com.`;
+          }
+        }
+      } catch (err) {
+        console.error('Submission error:', err);
+        if (formStatus) {
+          formStatus.className = 'form-status error';
+          formStatus.textContent = '❌ Network error. Please check your internet connection or email directly to aymanalrahabi@gmail.com.';
+        }
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('loading');
+          const btnText = submitBtn.querySelector('.btn-text');
+          if (btnText) btnText.textContent = 'Send Message';
+        }
+      }
+    });
+  }
+
+  function showFieldError(id, msg) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = msg;
+  }
+
+  // ── Fine Pointer Cursor Glow Effect ──
   const cursorGlow = document.getElementById('cursorGlow');
-
-  if (window.matchMedia('(pointer: fine)').matches) {
+  if (cursorGlow && window.matchMedia('(pointer: fine)').matches && !prefersReducedMotion) {
     document.addEventListener('mousemove', (e) => {
       cursorGlow.style.left = e.clientX + 'px';
       cursorGlow.style.top = e.clientY + 'px';
     });
   }
 
-  // ── Smooth Scroll for anchor links ──
+  // ── Smooth Scroll for Anchor Links ──
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
-      e.preventDefault();
-      const target = document.querySelector(this.getAttribute('href'));
-      if (target) {
-        const offsetTop = target.offsetTop - 80;
-        window.scrollTo({
-          top: offsetTop,
-          behavior: 'smooth'
-        });
+      const href = this.getAttribute('href');
+      if (href && href.startsWith('#') && href.length > 1) {
+        const target = document.querySelector(href);
+        if (target) {
+          e.preventDefault();
+          const offsetTop = target.offsetTop - 80;
+          window.scrollTo({
+            top: offsetTop,
+            behavior: prefersReducedMotion ? 'auto' : 'smooth'
+          });
+        }
       }
     });
-  });
-
-  // ── Parallax Effect on Hero ──
-  const heroBg = document.querySelector('.hero-bg img');
-
-  window.addEventListener('scroll', () => {
-    const scrolled = window.pageYOffset;
-    if (heroBg && scrolled < window.innerHeight) {
-      heroBg.style.transform = `translateY(${scrolled * 0.3}px) scale(1.1)`;
-    }
   });
 
 });
